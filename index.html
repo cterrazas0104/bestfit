@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>BestFit | Tu Clóset Inteligente</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0f172a" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .tab-active { border-bottom: 2px solid #38bdf8; color: #38bdf8; }
+    .glass { background: rgba(30, 41, 59, 0.75); backdrop-filter: blur(12px); }
+    .loader { border: 3px solid rgba(255,255,255,0.15); border-top-color: #38bdf8; border-radius: 50%; width: 22px; height: 22px; animation: spin 0.8s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+  <!-- ===================== PANTALLA DE LOGIN ===================== -->
+  <div id="view-login" class="flex-1 flex flex-col items-center justify-center p-6">
+    <div class="glass border border-slate-800 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-3xl shadow-lg">
+        👔
+      </div>
+      <h1 class="text-3xl font-bold tracking-tight">BestFit</h1>
+      <p class="text-slate-400 text-sm mt-1 mb-8">Tu mejor versión cada día, con tu clóset real.</p>
+
+      <div id="g_btn_container" class="flex justify-center mb-4"></div>
+
+      <div id="login-status" class="text-sm text-amber-400 hidden mt-4 p-3 rounded-xl bg-amber-950/50 border border-amber-800/50"></div>
+    </div>
+    <footer class="mt-8 text-xs text-slate-500 text-center">
+      BestFit · Desarrollado por César Gabriel Terrazas · <span class="text-slate-400">yoresuelvo.com.mx</span>
+    </footer>
+  </div>
+
+  <!-- ===================== APP PRINCIPAL ===================== -->
+  <div id="view-app" class="hidden flex-1 flex flex-col max-w-5xl w-full mx-auto">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-30 glass border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-lg">👔</div>
+        <div>
+          <h1 class="font-bold leading-tight text-base">BestFit</h1>
+          <p id="header-clima" class="text-xs text-sky-400">Cargando clima...</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="user-name-badge" class="text-xs text-slate-300 hidden sm:inline"></span>
+        <img id="user-avatar" src="" alt="Perfil" class="w-8 h-8 rounded-full border border-slate-700 object-cover" />
+        <button onclick="cerrarSesion()" class="text-xs text-slate-400 hover:text-rose-400 px-2 py-1 rounded-lg border border-slate-800">Salir</button>
+      </div>
+    </header>
+
+    <!-- Navegación -->
+    <nav class="flex border-b border-slate-800 bg-slate-900/60 text-xs sm:text-sm font-medium sticky top-[61px] z-20">
+      <button onclick="cambiarTab('hoy')" id="tab-hoy" class="flex-1 py-3 text-center tab-active">✨ Hoy</button>
+      <button onclick="cambiarTab('closet')" id="tab-closet" class="flex-1 py-3 text-center text-slate-400">👕 Mi Clóset</button>
+      <button onclick="cambiarTab('subir')" id="tab-subir" class="flex-1 py-3 text-center text-slate-400">📸 Subir</button>
+      <button onclick="cambiarTab('perfil')" id="tab-perfil" class="flex-1 py-3 text-center text-slate-400">👤 Perfil</button>
+    </nav>
+
+    <!-- Contenido -->
+    <main class="flex-1 p-4 pb-16 space-y-6">
+
+      <!-- TAB 1: OUTFITS DEL DÍA -->
+      <section id="panel-hoy" class="space-y-5">
+        <div class="glass border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 class="font-semibold text-lg">¿Cuál es el plan hoy?</h2>
+              <p class="text-xs text-slate-400">Combinaciones reales con tus prendas activas y el clima actual.</p>
+            </div>
+            <span id="stats-resumen" class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full"></span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <select id="select-ocasion" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm">
+              <option value="Oficina / Business Casual">Oficina / Business Casual</option>
+              <option value="Clases / Smart Casual">Clases / Smart Casual</option>
+              <option value="Casual Fin de Semana">Casual Fin de Semana</option>
+              <option value="Evento Formal / Panel / Cena">Evento Formal / Panel / Cena</option>
+              <option value="Viaje / Cómodo">Viaje / Cómodo</option>
+            </select>
+            <input id="input-clima" type="text" placeholder="Clima (automático)" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm" />
+            <button id="btn-generar" onclick="generarOutfits()" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold rounded-xl px-4 py-2.5 text-sm transition flex items-center justify-center gap-2">
+              <span>✨ Armar 2 Opciones</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="outfits-container" class="grid grid-cols-1 md:grid-cols-2 gap-5"></div>
+      </section>
+
+      <!-- TAB 2: MI CLÓSET -->
+      <section id="panel-closet" class="hidden space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex gap-2 text-xs">
+            <button onclick="filtrarCloset('ACTIVO')" id="f-activo" class="px-3 py-1.5 rounded-full bg-sky-500 text-slate-950 font-semibold">Activas</button>
+            <button onclick="filtrarCloset('LAVANDERIA')" id="f-lavanderia" class="px-3 py-1.5 rounded-full bg-slate-800 text-slate-300">🧺 Lavandería</button>
+            <button onclick="filtrarCloset('FRAGANCIAS')" id="f-fragancias" class="px-3 py-1.5 rounded-full bg-slate-800 text-slate-300">🧴 Fragancias</button>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="liberarTodaLavanderia()" class="text-xs bg-emerald-600/20 text-emerald-300 border border-emerald-700/50 hover:bg-emerald-600/30 px-3 py-1.5 rounded-full">
+              🧼 Ya lavé ropa
+            </button>
+            <button onclick="cargarCloset(true)" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-full">🔄 Refrescar</button>
+          </div>
+        </div>
+        <div id="closet-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
+      </section>
+
+      <!-- TAB 3: SUBIR PRENDA O PERFUME -->
+      <section id="panel-subir" class="hidden">
+        <div class="glass border border-slate-800 rounded-2xl p-5 max-w-lg mx-auto space-y-4">
+          <h2 class="font-semibold text-lg">Agregar al clóset con IA</h2>
+          <p class="text-xs text-slate-400">Sube una foto y Gemini la clasificará, le asignará código y la guardará automáticamente en tu Drive y catálogo.</p>
+
+          <div class="flex gap-3">
+            <label class="flex-1 cursor-pointer">
+              <input type="radio" name="tipo-upload" value="PRENDA" checked class="hidden peer" />
+              <div class="peer-checked:bg-sky-500/20 peer-checked:border-sky-500 border border-slate-700 rounded-xl p-3 text-center text-sm">👕 Prenda / Calzado</div>
+            </label>
+            <label class="flex-1 cursor-pointer">
+              <input type="radio" name="tipo-upload" value="FRAGANCIA" class="hidden peer" />
+              <div class="peer-checked:bg-sky-500/20 peer-checked:border-sky-500 border border-slate-700 rounded-xl p-3 text-center text-sm">🧴 Fragancia</div>
+            </label>
+          </div>
+
+          <input id="input-foto-item" type="file" accept="image/*" capture="environment" onchange="previsualizarItem(event)"
+            class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-slate-800 file:text-slate-200 hover:file:bg-slate-700" />
+
+          <img id="preview-item" class="hidden w-full max-h-72 object-contain rounded-xl bg-slate-900 border border-slate-800" />
+
+          <button id="btn-subir-item" onclick="subirPrendaIA()" class="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold py-2.5 rounded-xl text-sm transition">
+            Guardar y Clasificar con IA
+          </button>
+          <div id="upload-msg" class="text-xs text-center hidden"></div>
+        </div>
+      </section>
+
+      <!-- TAB 4: PERFIL -->
+      <section id="panel-perfil" class="hidden">
+        <div class="glass border border-slate-800 rounded-2xl p-5 max-w-lg mx-auto space-y-4">
+          <h2 class="font-semibold text-lg">Mi Perfil de Estilo</h2>
+          <div class="space-y-3 text-sm">
+            <div>
+              <label class="text-xs text-slate-400">Nombre</label>
+              <input id="perf-nombre" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 mt-1" />
+            </div>
+            <div>
+              <label class="text-xs text-slate-400">Estilo / Género</label>
+              <input id="perf-genero" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 mt-1" />
+            </div>
+            <div>
+              <label class="text-xs text-slate-400">Ciudad</label>
+              <input id="perf-ciudad" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 mt-1" />
+            </div>
+            <div>
+              <label class="text-xs text-slate-400">Visagismo, colorimetría y preferencias</label>
+              <textarea id="perf-visagismo" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 mt-1"></textarea>
+            </div>
+            <div>
+              <label class="text-xs text-slate-400 block mb-1">Foto base (para Probador Virtual)</label>
+              <input id="input-foto-base" type="file" accept="image/*" class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-slate-800 file:text-slate-200" />
+              <img id="preview-foto-base" class="hidden mt-2 w-24 h-24 object-cover rounded-xl border border-slate-700" />
+            </div>
+          </div>
+          <button id="btn-guardar-perfil" onclick="guardarPerfil()" class="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-2.5 rounded-xl text-sm">
+            Guardar Cambios
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="text-center text-[11px] text-slate-500 py-4 border-t border-slate-900">
+      BestFit v1.0 · Desarrollado por César Gabriel Terrazas · yoresuelvo.com.mx
+    </footer>
+  </div>
+
+  <!-- Toast flotante -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-700 text-slate-100 text-xs px-4 py-2.5 rounded-full shadow-xl hidden z-50"></div>
+
+  <script>
+    // ================= CONFIGURACIÓN (REEMPLAZA ESTOS 2 VALORES) =================
+    const GOOGLE_CLIENT_ID = "81781001546-hqvjpqvoh2ula41a03gmpuahr9ro22ro.apps.googleusercontent.com";
+    const GAS_API_URL      = "https://script.google.com/macros/s/AKfycbxDyFr_oTZqX5PTKaMys1IHHO_SFqzOSj4rroERMA3_XReHFQ1YU8W3OPMLQsPVfsQx/exec";
+    // =============================================================================
+
+    let state = {
+      token: sessionStorage.getItem('bf_token') || '',
+      perfil: null,
+      prendas: [],
+      fragancias: [],
+      filtroActual: 'ACTIVO',
+      climaTexto: '14°C a 23°C, templado'
+    };
+
+    window.onload = () => {
+      if (typeof google !== 'undefined' && google.accounts) {
+        initGoogleSignIn();
+      } else {
+        setTimeout(initGoogleSignIn, 800);
+      }
+      if (state.token) {
+        validarSesionExistente();
+      }
+    };
+
+    function initGoogleSignIn() {
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleCredentialResponse
+      });
+      google.accounts.id.renderButton(
+        document.getElementById("g_btn_container"),
+        { theme: "filled_black", size: "large", shape: "pill", width: 280, text: "signin_with" }
+      );
+    }
+
+    async function handleCredentialResponse(response) {
+      state.token = response.credential;
+      sessionStorage.setItem('bf_token', state.token);
+      await validarSesionExistente();
+    }
+
+    async function validarSesionExistente() {
+      mostrarStatusLogin('Verificando acceso en BestFit...');
+      const res = await apiCall('auth_perfil');
+      if (!res.ok) {
+        mostrarStatusLogin(res.error || 'Acceso no autorizado.');
+        sessionStorage.removeItem('bf_token');
+        state.token = '';
+        return;
+      }
+      state.perfil = res.perfil;
+      document.getElementById('view-login').classList.add('hidden');
+      document.getElementById('view-app').classList.remove('hidden');
+      document.getElementById('user-name-badge').textContent = state.perfil.nombre;
+      document.getElementById('user-avatar').src = res.google_picture || state.perfil.foto_base_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(state.perfil.nombre);
+
+      llenarFormularioPerfil();
+      obtenerClimaQueretaro();
+      cargarCloset(false);
+    }
+
+    function mostrarStatusLogin(msg) {
+      const el = document.getElementById('login-status');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    function cerrarSesion() {
+      sessionStorage.clear();
+      location.reload();
+    }
+
+    async function apiCall(action, payload = {}) {
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ token: state.token, action, payload })
+        });
+        return await res.json();
+      } catch (err) {
+        return { ok: false, error: 'Error de conexión con el servidor: ' + err.message };
+      }
+    }
+
+    // ================= CLIMA AUTOMÁTICO (OPEN-METEO QUERÉTARO) =================
+    async function obtenerClimaQueretaro() {
+      try {
+        const url = 'https://api.open-meteo.com/v1/forecast?latitude=20.5888&longitude=-100.3899&current=temperature_2m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=America%2FMexico_City';
+        const r = await fetch(url);
+        const d = await r.json();
+        const actual = Math.round(d.current.temperature_2m);
+        const min = Math.round(d.daily.temperature_2m_min[0]);
+        const max = Math.round(d.daily.temperature_2m_max[0]);
+        const lluvia = d.daily.precipitation_probability_max[0];
+        state.climaTexto = `Actual ${actual}°C | Mín ${min}°C / Máx ${max}°C | Lluvia ${lluvia}%`;
+        document.getElementById('header-clima').textContent = `Querétaro · ${actual}°C (${min}°/${max}° · 💧${lluvia}%)`;
+        document.getElementById('input-clima').value = state.climaTexto;
+      } catch {
+        document.getElementById('header-clima').textContent = state.perfil?.ciudad || 'Querétaro';
+        document.getElementById('input-clima').value = state.climaTexto;
+      }
+    }
+
+    // ================= CLÓSET Y LAVANDERÍA =================
+    async function cargarCloset(forzar = false) {
+      const cache = sessionStorage.getItem('bf_closet');
+      if (!forzar && cache) {
+        const parsed = JSON.parse(cache);
+        state.prendas = parsed.prendas;
+        state.fragancias = parsed.fragancias;
+        actualizarResumenYGrid();
+        return;
+      }
+      const res = await apiCall('get_closet');
+      if (res.ok) {
+        state.prendas = res.prendas || [];
+        state.fragancias = res.fragancias || [];
+        sessionStorage.setItem('bf_closet', JSON.stringify({ prendas: state.prendas, fragancias: state.fragancias }));
+        actualizarResumenYGrid();
+      } else {
+        toast(res.error);
+      }
+    }
+
+    function actualizarResumenYGrid() {
+      const activas = state.prendas.filter(p => String(p.estado).toLowerCase() === 'activo').length;
+      const lav = state.prendas.filter(p => String(p.estado).toLowerCase().includes('lavand')).length;
+      document.getElementById('stats-resumen').textContent = `${activas} activas · ${lav} lavandería · ${state.fragancias.length} perfumes`;
+      renderClosetGrid();
+    }
+
+    function filtrarCloset(tipo) {
+      state.filtroActual = tipo;
+      ['activo', 'lavanderia', 'fragancias'].forEach(k => {
+        const b = document.getElementById('f-' + k);
+        b.className = 'px-3 py-1.5 rounded-full ' + (k.toUpperCase() === tipo ? 'bg-sky-500 text-slate-950 font-semibold' : 'bg-slate-800 text-slate-300');
+      });
+      renderClosetGrid();
+    }
+
+    function renderClosetGrid() {
+      const grid = document.getElementById('closet-grid');
+      if (state.filtroActual === 'FRAGANCIAS') {
+        grid.innerHTML = state.fragancias.map(f => `
+          <div class="glass border border-slate-800 rounded-2xl overflow-hidden flex flex-col">
+            <div class="aspect-square bg-slate-900 flex items-center justify-center overflow-hidden">
+              ${f.foto_url ? `<img src="${f.foto_url}" loading="lazy" class="w-full h-full object-cover" />` : `<span class="text-4xl">🧴</span>`}
+            </div>
+            <div class="p-3">
+              <p class="font-semibold text-xs leading-snug">${f.fragancia}</p>
+              <p class="text-[11px] text-sky-400 mt-0.5">${f.familia || ''}</p>
+            </div>
+          </div>
+        `).join('');
+        return;
+      }
+
+      const lista = state.prendas.filter(p => {
+        const est = String(p.estado).toLowerCase();
+        return state.filtroActual === 'ACTIVO' ? est === 'activo' : est.includes('lavand');
+      });
+
+      if (!lista.length) {
+        grid.innerHTML = `<p class="col-span-full text-center text-slate-500 text-sm py-10">No hay prendas en esta sección.</p>`;
+        return;
+      }
+
+      grid.innerHTML = lista.map(p => `
+        <div class="glass border border-slate-800 rounded-2xl overflow-hidden flex flex-col">
+          <div class="aspect-[3/4] bg-slate-900 relative flex items-center justify-center overflow-hidden">
+            ${p.foto_url ? `<img src="${p.foto_url}" loading="lazy" class="w-full h-full object-cover" />` : `<span class="text-4xl">👕</span>`}
+            <span class="absolute top-2 left-2 text-[10px] font-bold bg-slate-950/80 px-2 py-0.5 rounded-md border border-slate-700">${p.codigo}</span>
+          </div>
+          <div class="p-2.5 flex-1 flex flex-col justify-between">
+            <div>
+              <p class="text-[11px] font-semibold text-sky-400">${p.categoria}</p>
+              <p class="text-[11px] text-slate-300 line-clamp-2 mt-0.5">${p.descripcion}</p>
+            </div>
+            ${p.ultimo_uso ? `<p class="text-[10px] text-slate-500 mt-1.5">Último uso: ${String(p.ultimo_uso).slice(0,10)}</p>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function liberarTodaLavanderia() {
+      if (!confirm('¿Regresar todas las prendas de lavandería a estado Activo?')) return;
+      toast('Actualizando lavandería...');
+      const res = await apiCall('reset_laundry', { codigos: 'ALL' });
+      if (res.ok) {
+        toast(`✅ ${res.restauradas} prendas regresaron a Activo.`);
+        cargarCloset(true);
+      } else toast(res.error);
+    }
+
+    // ================= GENERADOR DE OUTFITS =================
+    async function generarOutfits() {
+      const btn = document.getElementById('btn-generar');
+      const cont = document.getElementById('outfits-container');
+      const ocasion = document.getElementById('select-ocasion').value;
+      const clima = document.getElementById('input-clima').value || state.climaTexto;
+
+      btn.disabled = true;
+      btn.innerHTML = `<span class="loader"></span><span>Consultando IA...</span>`;
+      cont.innerHTML = '';
+
+      const res = await apiCall('generate_outfits', { ocasion, clima, num_opciones: 2 });
+      btn.disabled = false;
+      btn.innerHTML = `<span>✨ Armar 2 Opciones</span>`;
+
+      if (!res.ok) {
+        toast(res.error || 'No se pudieron generar outfits.');
+        return;
+      }
+
+      window._ultimasOpciones = res.opciones || [];
+      cont.innerHTML = window._ultimasOpciones.map((op, idx) => `
+        <div class="glass border border-slate-800 rounded-2xl p-4 flex flex-col justify-between space-y-4">
+          <div class="space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="text-[10px] uppercase tracking-wider text-sky-400 font-semibold">${op.estilo || 'Look'}</span>
+                <h3 class="font-bold text-base">${op.titulo}</h3>
+              </div>
+            </div>
+
+            <!-- Fotos reales de las prendas -->
+            <div class="grid grid-cols-3 gap-2">
+              ${(op.prendas_detalle || []).map(p => `
+                <div class="bg-slate-900 rounded-xl overflow-hidden border border-slate-800">
+                  <div class="aspect-square flex items-center justify-center overflow-hidden">
+                    ${p.foto_url ? `<img src="${p.foto_url}" class="w-full h-full object-cover" />` : `<span class="text-2xl">👕</span>`}
+                  </div>
+                  <p class="text-[10px] text-center py-1 font-mono text-slate-300">${p.codigo}</p>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Fragancia -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex items-center gap-3">
+              ${op.fragancia_foto
+                ? `<img src="${op.fragancia_foto}" class="w-11 h-11 rounded-lg object-cover border border-slate-700" />`
+                : `<div class="w-11 h-11 rounded-lg bg-slate-800 flex items-center justify-center text-xl">🧴</div>`}
+              <div class="text-xs">
+                <p class="font-semibold text-amber-300">${op.fragancia}</p>
+                <p class="text-slate-400 text-[11px]">${op.atomizaciones || ''}</p>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed">${op.justificacion || ''}</p>
+          </div>
+
+          <button onclick="elegirOutfit(${idx})" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold py-2.5 rounded-xl text-sm transition">
+            ✅ Usar esta opción hoy
+          </button>
+        </div>
+      `).join('');
+    }
+
+    async function elegirOutfit(idx) {
+      const op = window._ultimasOpciones[idx];
+      if (!op) return;
+      toast('Registrando outfit y lavandería...');
+      const res = await apiCall('confirm_outfit', {
+        codigos_lavanderia: op.codigos_lavanderia || [],
+        codigos_rotacion: op.codigos_rotacion || [],
+        fragancia: op.fragancia || '',
+        ocasion: document.getElementById('select-ocasion').value,
+        clima: document.getElementById('input-clima').value
+      });
+      if (res.ok) {
+        toast(`✅ ¡Listo! ${res.modificadas} prendas actualizadas en tu catálogo.`);
+        cargarCloset(true);
+      } else toast(res.error);
+    }
+
+    // ================= SUBIDA INTELIGENTE DE FOTOS =================
+    let imagenListaB64 = '';
+
+    function previsualizarItem(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      comprimirImagen(file, 1024, 0.8, (b64, dataUrl) => {
+        imagenListaB64 = b64;
+        const prev = document.getElementById('preview-item');
+        prev.src = dataUrl;
+        prev.classList.remove('hidden');
+      });
+    }
+
+    async function subirPrendaIA() {
+      if (!imagenListaB64) return toast('Primero selecciona o toma una foto.');
+      const tipo = document.querySelector('input[name="tipo-upload"]:checked').value;
+      const btn = document.getElementById('btn-subir-item');
+      const msg = document.getElementById('upload-msg');
+
+      btn.disabled = true;
+      btn.innerHTML = `<span class="loader"></span> Analizando con Gemini...`;
+      msg.classList.add('hidden');
+
+      const res = await apiCall('upload_item', { tipo, imagen_b64: imagenListaB64, mime_type: 'image/jpeg' });
+      btn.disabled = false;
+      btn.textContent = 'Guardar y Clasificar con IA';
+
+      if (res.ok) {
+        const etiqueta = res.item.codigo ? `${res.item.codigo} (${res.item.categoria})` : res.item.fragancia;
+        msg.textContent = `✅ Guardado como: ${etiqueta}`;
+        msg.className = 'text-xs text-center text-emerald-400';
+        imagenListaB64 = '';
+        document.getElementById('input-foto-item').value = '';
+        document.getElementById('preview-item').classList.add('hidden');
+        cargarCloset(true);
+      } else {
+        msg.textContent = `❌ ${res.error}`;
+        msg.className = 'text-xs text-center text-rose-400';
+      }
+      msg.classList.remove('hidden');
+    }
+
+    // ================= PERFIL =================
+    function llenarFormularioPerfil() {
+      if (!state.perfil) return;
+      document.getElementById('perf-nombre').value = state.perfil.nombre || '';
+      document.getElementById('perf-genero').value = state.perfil.genero_estilo || '';
+      document.getElementById('perf-ciudad').value = state.perfil.ciudad || '';
+      document.getElementById('perf-visagismo').value = state.perfil.perfil_visagismo || '';
+      if (state.perfil.foto_base_url) {
+        const img = document.getElementById('preview-foto-base');
+        img.src = state.perfil.foto_base_url;
+        img.classList.remove('hidden');
+      }
+    }
+
+    async function guardarPerfil() {
+      const btn = document.getElementById('btn-guardar-perfil');
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+
+      const payload = {
+        nombre: document.getElementById('perf-nombre').value,
+        genero_estilo: document.getElementById('perf-genero').value,
+        ciudad: document.getElementById('perf-ciudad').value,
+        perfil_visagismo: document.getElementById('perf-visagismo').value
+      };
+
+      const file = document.getElementById('input-foto-base').files[0];
+      if (file) {
+        await new Promise(resolve => comprimirImagen(file, 1024, 0.85, (b64) => {
+          payload.foto_base_b64 = b64;
+          payload.mime_type = 'image/jpeg';
+          resolve();
+        }));
+      }
+
+      const res = await apiCall('update_perfil', payload);
+      btn.disabled = false;
+      btn.textContent = 'Guardar Cambios';
+
+      if (res.ok) {
+        state.perfil
