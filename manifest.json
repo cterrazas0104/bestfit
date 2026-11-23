@@ -1,0 +1,10 @@
+{
+  "name": "BestFit — Tu Mejor Versión Cada Día",
+  "short_name": "BestFit",
+  "description": "Asesor inteligente de clóset, outfits y fragancias",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait"
+}
