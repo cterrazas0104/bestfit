@@ -66,18 +66,30 @@
     <!-- Contenido -->
     <main class="flex-1 p-4 pb-16 space-y-6">
 
-      <!-- TAB 1: OUTFITS DEL DÍA -->
+      <!-- TAB 1: OUTFITS DEL DÍA O SEMANA -->
       <section id="panel-hoy" class="space-y-5">
         <div class="glass border border-slate-800 rounded-2xl p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 class="font-semibold text-lg">¿Cuál es el plan hoy?</h2>
-              <p class="text-xs text-slate-400">Combinaciones reales con tus prendas activas y el clima actual.</p>
+              <h2 class="font-semibold text-lg">¿Cuál es el plan?</h2>
+              <p class="text-xs text-slate-400">Elige un día o arma las 7 propuestas de la semana con tus prendas activas.</p>
             </div>
             <span id="stats-resumen" class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full"></span>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <select id="select-dia" onchange="actualizarBotonPlan()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm">
+              <option value="Hoy">Día: Hoy</option>
+              <option value="Mañana">Día: Mañana</option>
+              <option value="Lunes">Lunes</option>
+              <option value="Martes">Martes</option>
+              <option value="Miércoles">Miércoles</option>
+              <option value="Jueves">Jueves</option>
+              <option value="Viernes">Viernes</option>
+              <option value="Sábado">Sábado</option>
+              <option value="Domingo">Domingo</option>
+              <option value="SEMANA">📅 7 propuestas (Semana)</option>
+            </select>
             <select id="select-ocasion" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm">
               <option value="Oficina / Business Casual">Oficina / Business Casual</option>
               <option value="Clases / Smart Casual">Clases / Smart Casual</option>
@@ -186,10 +198,10 @@
   <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-700 text-slate-100 text-xs px-4 py-2.5 rounded-full shadow-xl hidden z-50"></div>
 
   <script>
-    // ================= CONFIGURACIÓN (REEMPLAZA ESTOS 2 VALORES) =================
+    // ================= CONFIGURACIÓN =================
     const GOOGLE_CLIENT_ID = "81781001546-hqvjpqvoh2ula41a03gmpuahr9ro22ro.apps.googleusercontent.com";
     const GAS_API_URL      = "https://script.google.com/macros/s/AKfycbxDyFr_oTZqX5PTKaMys1IHHO_SFqzOSj4rroERMA3_XReHFQ1YU8W3OPMLQsPVfsQx/exec";
-    // =============================================================================
+    // =================================================
 
     let state = {
       token: sessionStorage.getItem('bf_token') || '',
@@ -382,20 +394,37 @@
       } else toast(res.error);
     }
 
-    // ================= GENERADOR DE OUTFITS =================
+    // ================= GENERADOR DE OUTFITS (DÍA O 7 DÍAS) =================
+    function actualizarBotonPlan() {
+      const sel = document.getElementById('select-dia');
+      const esSemana = sel.value === 'SEMANA';
+      document.getElementById('btn-generar').innerHTML = esSemana
+        ? '<span>📅 Armar 7 Días</span>'
+        : '<span>✨ Armar 2 Opciones</span>';
+    }
+
     async function generarOutfits() {
       const btn = document.getElementById('btn-generar');
       const cont = document.getElementById('outfits-container');
+      const selDia = document.getElementById('select-dia');
+      const esSemana = selDia.value === 'SEMANA';
       const ocasion = document.getElementById('select-ocasion').value;
       const clima = document.getElementById('input-clima').value || state.climaTexto;
 
       btn.disabled = true;
-      btn.innerHTML = `<span class="loader"></span><span>Consultando IA...</span>`;
+      btn.innerHTML = `<span class="loader"></span><span>${esSemana ? 'Armando 7 días...' : 'Consultando IA...'}</span>`;
       cont.innerHTML = '';
 
-      const res = await apiCall('generate_outfits', { ocasion, clima, num_opciones: 2 });
+      const res = await apiCall('generate_outfits', {
+        ocasion,
+        clima,
+        modo: esSemana ? 'SEMANA' : 'DIA',
+        dia_objetivo: selDia.value,
+        num_opciones: esSemana ? 7 : 2
+      });
+
       btn.disabled = false;
-      btn.innerHTML = `<span>✨ Armar 2 Opciones</span>`;
+      actualizarBotonPlan();
 
       if (!res.ok) {
         toast(res.error || 'No se pudieron generar outfits.');
@@ -408,7 +437,7 @@
           <div class="space-y-3">
             <div class="flex items-start justify-between gap-2">
               <div>
-                <span class="text-[10px] uppercase tracking-wider text-sky-400 font-semibold">${op.estilo || 'Look'}</span>
+                <span class="text-[10px] uppercase tracking-wider text-sky-400 font-semibold">${op.dia || ''} · ${op.estilo || 'Look'}</span>
                 <h3 class="font-bold text-base">${op.titulo}</h3>
               </div>
             </div>
@@ -440,7 +469,7 @@
           </div>
 
           <button onclick="elegirOutfit(${idx})" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold py-2.5 rounded-xl text-sm transition">
-            ✅ Usar esta opción hoy
+            ✅ Usar esta opción
           </button>
         </div>
       `).join('');
