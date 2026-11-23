@@ -176,9 +176,17 @@
               <textarea id="perf-visagismo" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 mt-1"></textarea>
             </div>
             <div>
-              <label class="text-xs text-slate-400 block mb-1">Foto base (para Probador Virtual)</label>
-              <input id="input-foto-base" type="file" accept="image/*" class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-slate-800 file:text-slate-200" />
-              <img id="preview-foto-base" class="hidden mt-2 w-24 h-24 object-cover rounded-xl border border-slate-700" />
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-xs text-slate-400">Fotos base (hasta 5: rostro y cuerpo)</label>
+                <span id="contador-fotos-base" class="text-[11px] text-sky-400">0 / 5</span>
+              </div>
+              <input id="input-foto-base" type="file" accept="image/*" multiple onchange="manejarFotosBase(event)"
+                class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-slate-800 file:text-slate-200" />
+              <label class="flex items-center gap-2 mt-2 text-xs text-slate-400 cursor-pointer">
+                <input id="check-reemplazar-fotos" type="checkbox" onchange="renderFotosBasePreview()" class="rounded bg-slate-900 border-slate-700" />
+                <span>Reemplazar mis fotos base guardadas al subir nuevas</span>
+              </label>
+              <div id="grid-fotos-base" class="grid grid-cols-5 gap-2 mt-2"></div>
             </div>
           </div>
           <button id="btn-guardar-perfil" onclick="guardarPerfil()" class="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-2.5 rounded-xl text-sm">
@@ -211,6 +219,8 @@
       filtroActual: 'ACTIVO',
       climaTexto: '14°C a 23°C, templado'
     };
+
+    let nuevasFotosBase = [];
 
     window.onload = () => {
       if (typeof google !== 'undefined' && google.accounts) {
@@ -468,9 +478,15 @@
             <p class="text-xs text-slate-300 leading-relaxed">${op.justificacion || ''}</p>
           </div>
 
-          <button onclick="elegirOutfit(${idx})" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold py-2.5 rounded-xl text-sm transition">
-            ✅ Usar esta opción
-          </button>
+          <div class="space-y-2">
+            <button onclick="elegirOutfit(${idx})" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold py-2.5 rounded-xl text-sm transition">
+              ✅ Usar esta opción
+            </button>
+            <button onclick="vermePuesto(${idx})" id="btn-tryon-${idx}" class="w-full bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 font-semibold py-2 rounded-xl text-xs transition">
+              🧥 Verme puesto este outfit
+            </button>
+            <div id="tryon-result-${idx}" class="hidden pt-1"></div>
+          </div>
         </div>
       `).join('');
     }
@@ -490,6 +506,37 @@
         toast(`✅ ¡Listo! ${res.modificadas} prendas actualizadas en tu catálogo.`);
         cargarCloset(true);
       } else toast(res.error);
+    }
+
+    async function vermePuesto(idx) {
+      const op = window._ultimasOpciones[idx];
+      if (!op) return;
+      const btn = document.getElementById(`btn-tryon-${idx}`);
+      const cont = document.getElementById(`tryon-result-${idx}`);
+
+      btn.disabled = true;
+      btn.innerHTML = `<span class="loader"></span> Generando foto contigo...`;
+      cont.classList.add('hidden');
+
+      const res = await apiCall('virtual_tryon', {
+        codigos_prendas: op.codigos_prendas || [],
+        clima: document.getElementById('input-clima').value || state.climaTexto
+      });
+
+      btn.disabled = false;
+      btn.textContent = '🧥 Verme puesto este outfit';
+
+      if (!res.ok) {
+        toast(res.error || 'No se pudo generar la foto.');
+        return;
+      }
+
+      cont.innerHTML = `
+        <img src="data:${res.mime_type || 'image/jpeg'};base64,${res.imagen_b64}"
+             alt="Vista previa con el outfit"
+             class="w-full rounded-xl border border-indigo-500/40 shadow-lg object-cover" />
+      `;
+      cont.classList.remove('hidden');
     }
 
     // ================= SUBIDA INTELIGENTE DE FOTOS =================
@@ -535,18 +582,75 @@
       msg.classList.remove('hidden');
     }
 
-    // ================= PERFIL =================
+    // ================= PERFIL (HASTA 5 FOTOS BASE) =================
+    function obtenerFotosBaseActuales() {
+      if (!state.perfil) return [];
+      if (Array.isArray(state.perfil.fotos_base) && state.perfil.fotos_base.length) {
+        return state.perfil.fotos_base.slice(0, 5);
+      }
+      const raw = String(state.perfil.foto_base_url || '').trim();
+      if (!raw) return [];
+      if (raw.startsWith('[')) {
+        try { return JSON.parse(raw).slice(0, 5); } catch { return []; }
+      }
+      return [raw];
+    }
+
     function llenarFormularioPerfil() {
       if (!state.perfil) return;
       document.getElementById('perf-nombre').value = state.perfil.nombre || '';
       document.getElementById('perf-genero').value = state.perfil.genero_estilo || '';
       document.getElementById('perf-ciudad').value = state.perfil.ciudad || '';
       document.getElementById('perf-visagismo').value = state.perfil.perfil_visagismo || '';
-      if (state.perfil.foto_base_url) {
-        const img = document.getElementById('preview-foto-base');
-        img.src = state.perfil.foto_base_url;
-        img.classList.remove('hidden');
+      renderFotosBasePreview();
+    }
+
+    function renderFotosBasePreview() {
+      const guardadas = obtenerFotosBaseActuales();
+      const reemplazar = document.getElementById('check-reemplazar-fotos')?.checked;
+      const base = reemplazar ? [] : guardadas;
+      const combinadas = [
+        ...base.map(url => ({ url, esNueva: false })),
+        ...nuevasFotosBase.map(f => ({ url: f.dataUrl, esNueva: true }))
+      ].slice(0, 5);
+
+      document.getElementById('contador-fotos-base').textContent = `${combinadas.length} / 5`;
+      const grid = document.getElementById('grid-fotos-base');
+      grid.innerHTML = combinadas.map(item => `
+        <div class="relative aspect-square rounded-xl overflow-hidden border ${item.esNueva ? 'border-sky-400' : 'border-slate-700'} bg-slate-900">
+          <img src="${item.url}" class="w-full h-full object-cover" />
+        </div>
+      `).join('');
+    }
+
+    async function manejarFotosBase(e) {
+      const archivos = Array.from(e.target.files || []);
+      if (!archivos.length) return;
+
+      const guardadas = obtenerFotosBaseActuales();
+      const reemplazar = document.getElementById('check-reemplazar-fotos')?.checked;
+      const cupoDisponible = Math.max(0, 5 - (reemplazar ? 0 : guardadas.length));
+
+      if (cupoDisponible === 0) {
+        toast('Ya tienes 5 fotos base. Marca "Reemplazar" si quieres cambiarlas.');
+        e.target.value = '';
+        return;
       }
+
+      const seleccion = archivos.slice(0, cupoDisponible);
+      if (archivos.length > cupoDisponible) {
+        toast(`Solo se agregaron ${cupoDisponible} foto(s) para no pasar de 5.`);
+      }
+
+      for (const file of seleccion) {
+        await new Promise(resolve => {
+          comprimirImagen(file, 1024, 0.85, (base64, dataUrl) => {
+            nuevasFotosBase.push({ base64, mime_type: 'image/jpeg', dataUrl });
+            resolve();
+          });
+        });
+      }
+      renderFotosBasePreview();
     }
 
     async function guardarPerfil() {
@@ -554,21 +658,15 @@
       btn.disabled = true;
       btn.textContent = 'Guardando...';
 
+      const reemplazar = document.getElementById('check-reemplazar-fotos')?.checked || false;
       const payload = {
         nombre: document.getElementById('perf-nombre').value,
         genero_estilo: document.getElementById('perf-genero').value,
         ciudad: document.getElementById('perf-ciudad').value,
-        perfil_visagismo: document.getElementById('perf-visagismo').value
+        perfil_visagismo: document.getElementById('perf-visagismo').value,
+        reemplazar_fotos: reemplazar,
+        fotos_base_nuevas: nuevasFotosBase.map(f => ({ base64: f.base64, mime_type: f.mime_type }))
       };
-
-      const file = document.getElementById('input-foto-base').files[0];
-      if (file) {
-        await new Promise(resolve => comprimirImagen(file, 1024, 0.85, (b64) => {
-          payload.foto_base_b64 = b64;
-          payload.mime_type = 'image/jpeg';
-          resolve();
-        }));
-      }
 
       const res = await apiCall('update_perfil', payload);
       btn.disabled = false;
@@ -576,8 +674,13 @@
 
       if (res.ok) {
         state.perfil = res.perfil;
+        nuevasFotosBase = [];
+        document.getElementById('input-foto-base').value = '';
+        if (document.getElementById('check-reemplazar-fotos')) {
+          document.getElementById('check-reemplazar-fotos').checked = false;
+        }
         llenarFormularioPerfil();
-        toast('✅ Perfil actualizado.');
+        toast('✅ Perfil y fotos base actualizados.');
       } else toast(res.error);
     }
 
