@@ -154,10 +154,14 @@
         </div>
       </section>
 
-      <!-- TAB 4: PERFIL -->
-      <section id="panel-perfil" class="hidden">
+      <!-- TAB 4: PERFIL Y ADMINISTRACIÓN DE USUARIOS -->
+      <section id="panel-perfil" class="hidden space-y-6">
         <div class="glass border border-slate-800 rounded-2xl p-5 max-w-lg mx-auto space-y-4">
-          <h2 class="font-semibold text-lg">Mi Perfil de Estilo</h2>
+          <div class="flex items-center justify-between">
+            <h2 class="font-semibold text-lg">Mi Perfil de Estilo</h2>
+            <span id="badge-rol" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-800 text-sky-400"></span>
+          </div>
+
           <div class="space-y-3 text-sm">
             <div>
               <label class="text-xs text-slate-400">Nombre</label>
@@ -165,7 +169,7 @@
             </div>
             <div>
               <label class="text-xs text-slate-400">Estilo / Género</label>
-              <input id="perf-genero" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 mt-1" />
+              <input id="perf-genero" type="text" placeholder="Ej. Masculino - Business/Smart Casual" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 mt-1" />
             </div>
             <div>
               <label class="text-xs text-slate-400">Ciudad</label>
@@ -173,7 +177,7 @@
             </div>
             <div>
               <label class="text-xs text-slate-400">Visagismo, colorimetría y preferencias</label>
-              <textarea id="perf-visagismo" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 mt-1"></textarea>
+              <textarea id="perf-visagismo" rows="3" placeholder="Se puede llenar automáticamente con IA al subir tus fotos" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 mt-1"></textarea>
             </div>
             <div>
               <div class="flex items-center justify-between mb-1">
@@ -182,23 +186,95 @@
               </div>
               <input id="input-foto-base" type="file" accept="image/*" multiple onchange="manejarFotosBase(event)"
                 class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-slate-800 file:text-slate-200" />
-              <label class="flex items-center gap-2 mt-2 text-xs text-slate-400 cursor-pointer">
-                <input id="check-reemplazar-fotos" type="checkbox" onchange="renderFotosBasePreview()" class="rounded bg-slate-900 border-slate-700" />
-                <span>Reemplazar mis fotos base guardadas al subir nuevas</span>
-              </label>
+              <div class="space-y-1.5 mt-2">
+                <label class="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
+                  <input id="check-reemplazar-fotos" type="checkbox" onchange="renderFotosBasePreview()" class="rounded bg-slate-900 border-slate-700" />
+                  <span>Reemplazar mis fotos base guardadas al subir nuevas</span>
+                </label>
+                <label class="flex items-center gap-2 text-xs text-sky-300 cursor-pointer">
+                  <input id="check-analizar-ia" type="checkbox" class="rounded bg-slate-900 border-slate-700" />
+                  <span>✨ Analizar mis fotos con IA para actualizar estilo y visagismo</span>
+                </label>
+              </div>
               <div id="grid-fotos-base" class="grid grid-cols-5 gap-2 mt-2"></div>
             </div>
           </div>
+
           <button id="btn-guardar-perfil" onclick="guardarPerfil()" class="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-semibold py-2.5 rounded-xl text-sm">
             Guardar Cambios
           </button>
+        </div>
+
+        <!-- PANEL EXCLUSIVO PARA ADMIN: GESTIÓN DE PERFILES -->
+        <div id="admin-users-card" class="hidden glass border border-sky-900/60 rounded-2xl p-5 max-w-lg mx-auto space-y-4">
+          <div>
+            <h3 class="font-semibold text-base text-sky-400">🛡️ Administración de Perfiles</h3>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Agrega o edita cuentas autorizadas. Si dejas vacíos <b>Estilo</b> o <b>Visagismo</b>, la IA los generará automáticamente y los refinará cuando el usuario suba sus fotos.
+            </p>
+          </div>
+
+          <div class="space-y-2.5 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label class="text-slate-400">Correo Google *</label>
+                <input id="adm-email" type="email" placeholder="usuario@gmail.com" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 mt-1 text-sm" />
+              </div>
+              <div>
+                <label class="text-slate-400">Nombre *</label>
+                <input id="adm-nombre" type="text" placeholder="Ej. Mariela" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 mt-1 text-sm" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div>
+                <label class="text-slate-400">Rol</label>
+                <select id="adm-rol" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 mt-1 text-sm">
+                  <option value="USUARIO">USUARIO</option>
+                  <option value="ADMIN">ADMIN</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-slate-400">Estado Acceso</label>
+                <select id="adm-estado" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 mt-1 text-sm">
+                  <option value="ACTIVO">ACTIVO</option>
+                  <option value="INACTIVO">INACTIVO</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-slate-400">Ciudad</label>
+                <input id="adm-ciudad" type="text" value="Santiago de Querétaro, MX" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 mt-1 text-sm" />
+              </div>
+            </div>
+
+            <div>
+              <label class="text-slate-400">Estilo / Género (opcional, la IA lo completa)</label>
+              <input id="adm-genero" type="text" placeholder="Ej. Femenino - Smart / Casual (o déjalo vacío)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 mt-1 text-sm" />
+            </div>
+            <div>
+              <label class="text-slate-400">Visagismo (opcional, la IA lo completa)</label>
+              <textarea id="adm-visagismo" rows="2" placeholder="Déjalo vacío para que la IA lo genere automáticamente" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 mt-1 text-sm"></textarea>
+            </div>
+
+            <button id="btn-adm-guardar" onclick="guardarUsuarioAdmin()" class="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold py-2.5 rounded-xl text-sm transition">
+              + Guardar / Invitar Perfil
+            </button>
+          </div>
+
+          <div class="border-t border-slate-800 pt-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold text-slate-300">Usuarios registrados</span>
+              <button onclick="cargarUsuariosAdmin()" class="text-[11px] text-sky-400 hover:underline">Actualizar lista</button>
+            </div>
+            <div id="adm-lista-usuarios" class="space-y-2 text-xs"></div>
+          </div>
         </div>
       </section>
 
     </main>
 
     <footer class="text-center text-[11px] text-slate-500 py-4 border-t border-slate-900">
-      BestFit v1.0 · Desarrollado por César Gabriel Terrazas · yoresuelvo.com.mx
+      BestFit v1.1 · Desarrollado por César Gabriel Terrazas · yoresuelvo.com.mx
     </footer>
   </div>
 
@@ -217,7 +293,8 @@
       prendas: [],
       fragancias: [],
       filtroActual: 'ACTIVO',
-      climaTexto: '14°C a 23°C, templado'
+      climaTexto: '14°C a 23°C, templado',
+      pronostico7Dias: []
     };
 
     let nuevasFotosBase = [];
@@ -266,6 +343,10 @@
       document.getElementById('user-avatar').src = res.google_picture || state.perfil.foto_base_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(state.perfil.nombre);
 
       llenarFormularioPerfil();
+      if (state.perfil.rol === 'ADMIN') {
+        document.getElementById('admin-users-card').classList.remove('hidden');
+        cargarUsuariosAdmin();
+      }
       obtenerClimaQueretaro();
       cargarCloset(false);
     }
@@ -294,23 +375,74 @@
       }
     }
 
-    // ================= CLIMA AUTOMÁTICO (OPEN-METEO QUERÉTARO) =================
+    // ================= CLIMA AUTOMÁTICO (OPEN-METEO 7 DÍAS) =================
     async function obtenerClimaQueretaro() {
       try {
-        const url = 'https://api.open-meteo.com/v1/forecast?latitude=20.5888&longitude=-100.3899&current=temperature_2m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=America%2FMexico_City';
+        const url = 'https://api.open-meteo.com/v1/forecast?latitude=20.5888&longitude=-100.3899&current=temperature_2m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=America%2FMexico_City';
         const r = await fetch(url);
         const d = await r.json();
-        const actual = Math.round(d.current.temperature_2m);
-        const min = Math.round(d.daily.temperature_2m_min[0]);
-        const max = Math.round(d.daily.temperature_2m_max[0]);
-        const lluvia = d.daily.precipitation_probability_max[0];
-        state.climaTexto = `Actual ${actual}°C | Mín ${min}°C / Máx ${max}°C | Lluvia ${lluvia}%`;
-        document.getElementById('header-clima').textContent = `Querétaro · ${actual}°C (${min}°/${max}° · 💧${lluvia}%)`;
-        document.getElementById('input-clima').value = state.climaTexto;
+
+        const actual = Math.round(d.current?.temperature_2m ?? 18);
+        const dias = d.daily?.time || [];
+        const mins = d.daily?.temperature_2m_min || [];
+        const maxs = d.daily?.temperature_2m_max || [];
+        const lluvias = d.daily?.precipitation_probability_max || [];
+        const nombresDiaSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+        state.pronostico7Dias = dias.map((fechaStr, idx) => {
+          const [y, m, day] = fechaStr.split('-').map(Number);
+          const fechaObj = new Date(y, m - 1, day);
+          const nombreDia = nombresDiaSemana[fechaObj.getDay()];
+          const min = Math.round(mins[idx] ?? 12);
+          const max = Math.round(maxs[idx] ?? 24);
+          const lluvia = Math.round(lluvias[idx] ?? 0);
+
+          const resumen = idx === 0
+            ? `Actual ${actual}°C | Mín ${min}°C / Máx ${max}°C | Lluvia ${lluvia}%`
+            : `${nombreDia} (${fechaStr}): Mín ${min}°C / Máx ${max}°C | Lluvia ${lluvia}%`;
+
+          return { indice: idx, fecha: fechaStr, nombreDia, min, max, lluvia, resumen };
+        });
+
+        const hoyData = state.pronostico7Dias[0];
+        if (hoyData) {
+          document.getElementById('header-clima').textContent =
+            `Querétaro · ${actual}°C (${hoyData.min}°/${hoyData.max}° · 💧${hoyData.lluvia}%)`;
+        }
+        aplicarClimaSegunDia();
       } catch {
         document.getElementById('header-clima').textContent = state.perfil?.ciudad || 'Querétaro';
         document.getElementById('input-clima').value = state.climaTexto;
       }
+    }
+
+    function aplicarClimaSegunDia() {
+      const selDia = document.getElementById('select-dia');
+      const inputClima = document.getElementById('input-clima');
+      if (!selDia || !inputClima) return;
+
+      const valor = selDia.value;
+      const lista = state.pronostico7Dias || [];
+      if (!lista.length) {
+        inputClima.value = state.climaTexto;
+        return;
+      }
+
+      if (valor === 'SEMANA') {
+        inputClima.value = lista.map(d => `${d.nombreDia.slice(0, 3)}: ${d.min}°/${d.max}° (💧${d.lluvia}%)`).join(' | ');
+        return;
+      }
+      if (valor === 'Hoy') {
+        inputClima.value = lista[0].resumen;
+        return;
+      }
+      if (valor === 'Mañana') {
+        inputClima.value = (lista[1] || lista[0]).resumen;
+        return;
+      }
+
+      const coincidencia = lista.find(d => d.nombreDia.toLowerCase() === valor.toLowerCase());
+      inputClima.value = coincidencia ? coincidencia.resumen : lista[0].resumen;
     }
 
     // ================= CLÓSET Y LAVANDERÍA =================
@@ -411,6 +543,7 @@
       document.getElementById('btn-generar').innerHTML = esSemana
         ? '<span>📅 Armar 7 Días</span>'
         : '<span>✨ Armar 2 Opciones</span>';
+      aplicarClimaSegunDia();
     }
 
     async function generarOutfits() {
@@ -428,6 +561,7 @@
       const res = await apiCall('generate_outfits', {
         ocasion,
         clima,
+        pronostico_semana: state.pronostico7Dias || [],
         modo: esSemana ? 'SEMANA' : 'DIA',
         dia_objetivo: selDia.value,
         num_opciones: esSemana ? 7 : 2
@@ -452,7 +586,6 @@
               </div>
             </div>
 
-            <!-- Fotos reales de las prendas -->
             <div class="grid grid-cols-3 gap-2">
               ${(op.prendas_detalle || []).map(p => `
                 <div class="bg-slate-900 rounded-xl overflow-hidden border border-slate-800">
@@ -464,7 +597,6 @@
               `).join('')}
             </div>
 
-            <!-- Fragancia -->
             <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex items-center gap-3">
               ${op.fragancia_foto
                 ? `<img src="${op.fragancia_foto}" class="w-11 h-11 rounded-lg object-cover border border-slate-700" />`
@@ -527,7 +659,10 @@
       btn.textContent = '🧥 Verme puesto este outfit';
 
       if (!res.ok) {
-        toast(res.error || 'No se pudo generar la foto.');
+        const esCuota = String(res.error || '').includes('429') || String(res.error || '').includes('RESOURCE_EXHAUSTED');
+        toast(esCuota
+          ? 'Se alcanzó el límite gratuito temporal de generación de imágenes. Intenta más tarde.'
+          : (res.error || 'No se pudo generar la foto.'));
         return;
       }
 
@@ -582,7 +717,7 @@
       msg.classList.remove('hidden');
     }
 
-    // ================= PERFIL (HASTA 5 FOTOS BASE) =================
+    // ================= PERFIL (HASTA 5 FOTOS BASE + VISAGISMO IA) =================
     function obtenerFotosBaseActuales() {
       if (!state.perfil) return [];
       if (Array.isArray(state.perfil.fotos_base) && state.perfil.fotos_base.length) {
@@ -598,6 +733,7 @@
 
     function llenarFormularioPerfil() {
       if (!state.perfil) return;
+      document.getElementById('badge-rol').textContent = state.perfil.rol || 'USUARIO';
       document.getElementById('perf-nombre').value = state.perfil.nombre || '';
       document.getElementById('perf-genero').value = state.perfil.genero_estilo || '';
       document.getElementById('perf-ciudad').value = state.perfil.ciudad || '';
@@ -659,12 +795,14 @@
       btn.textContent = 'Guardando...';
 
       const reemplazar = document.getElementById('check-reemplazar-fotos')?.checked || false;
+      const analizarIA = document.getElementById('check-analizar-ia')?.checked || false;
       const payload = {
         nombre: document.getElementById('perf-nombre').value,
         genero_estilo: document.getElementById('perf-genero').value,
         ciudad: document.getElementById('perf-ciudad').value,
         perfil_visagismo: document.getElementById('perf-visagismo').value,
         reemplazar_fotos: reemplazar,
+        analizar_ia: analizarIA,
         fotos_base_nuevas: nuevasFotosBase.map(f => ({ base64: f.base64, mime_type: f.mime_type }))
       };
 
@@ -676,12 +814,83 @@
         state.perfil = res.perfil;
         nuevasFotosBase = [];
         document.getElementById('input-foto-base').value = '';
-        if (document.getElementById('check-reemplazar-fotos')) {
-          document.getElementById('check-reemplazar-fotos').checked = false;
-        }
+        if (document.getElementById('check-reemplazar-fotos')) document.getElementById('check-reemplazar-fotos').checked = false;
+        if (document.getElementById('check-analizar-ia')) document.getElementById('check-analizar-ia').checked = false;
         llenarFormularioPerfil();
-        toast('✅ Perfil y fotos base actualizados.');
+        toast('✅ Perfil actualizado.');
       } else toast(res.error);
+    }
+
+    // ================= ADMINISTRACIÓN DE USUARIOS (SOLO ADMIN) =================
+    async function cargarUsuariosAdmin() {
+      const cont = document.getElementById('adm-lista-usuarios');
+      cont.innerHTML = `<p class="text-slate-500">Cargando usuarios...</p>`;
+      const res = await apiCall('admin_list_users');
+      if (!res.ok) {
+        cont.innerHTML = `<p class="text-rose-400">${res.error}</p>`;
+        return;
+      }
+      window._usuariosAdmin = res.usuarios || [];
+      cont.innerHTML = window._usuariosAdmin.map((u, i) => `
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <p class="font-semibold text-slate-200 truncate">${u.nombre} <span class="text-[10px] text-sky-400">(${u.rol})</span></p>
+            <p class="text-[11px] text-slate-400 truncate">${u.email}</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="text-[10px] px-2 py-0.5 rounded-full ${u.estado_acceso === 'ACTIVO' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-rose-950 text-rose-300 border border-rose-800'}">
+              ${u.estado_acceso}
+            </span>
+            <button onclick="editarUsuarioAdmin(${i})" class="text-[11px] bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg">Editar</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function editarUsuarioAdmin(idx) {
+      const u = window._usuariosAdmin[idx];
+      if (!u) return;
+      document.getElementById('adm-email').value = u.email;
+      document.getElementById('adm-nombre').value = u.nombre;
+      document.getElementById('adm-rol').value = u.rol;
+      document.getElementById('adm-estado').value = u.estado_acceso;
+      document.getElementById('adm-ciudad').value = u.ciudad;
+      document.getElementById('adm-genero').value = u.genero_estilo;
+      document.getElementById('adm-visagismo').value = u.perfil_visagismo;
+      toast(`Editando a ${u.nombre}`);
+    }
+
+    async function guardarUsuarioAdmin() {
+      const btn = document.getElementById('btn-adm-guardar');
+      const payload = {
+        email: document.getElementById('adm-email').value,
+        nombre: document.getElementById('adm-nombre').value,
+        rol: document.getElementById('adm-rol').value,
+        estado_acceso: document.getElementById('adm-estado').value,
+        ciudad: document.getElementById('adm-ciudad').value,
+        genero_estilo: document.getElementById('adm-genero').value,
+        perfil_visagismo: document.getElementById('adm-visagismo').value
+      };
+      if (!payload.email || !payload.nombre) {
+        return toast('Ingresa al menos el correo y el nombre.');
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Guardando perfil con IA...';
+      const res = await apiCall('admin_save_user', payload);
+      btn.disabled = false;
+      btn.textContent = '+ Guardar / Invitar Perfil';
+
+      if (res.ok) {
+        toast(`✅ ${res.mensaje}`);
+        document.getElementById('adm-email').value = '';
+        document.getElementById('adm-nombre').value = '';
+        document.getElementById('adm-genero').value = '';
+        document.getElementById('adm-visagismo').value = '';
+        cargarUsuariosAdmin();
+      } else {
+        toast(res.error);
+      }
     }
 
     // ================= UTILIDADES =================
@@ -717,7 +926,7 @@
       t.textContent = texto;
       t.classList.remove('hidden');
       clearTimeout(window._toastTimer);
-      window._toastTimer = setTimeout(() => t.classList.add('hidden'), 3500);
+      window._toastTimer = setTimeout(() => t.classList.add('hidden'), 4000);
     }
   </script>
 </body>
